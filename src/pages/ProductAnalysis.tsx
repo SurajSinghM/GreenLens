@@ -72,7 +72,7 @@ const ProductAnalysis = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/analyze-product`, {
+        const res = await fetch(`http://localhost:3001/api/analyze-product`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productData: { query: productQuery } }),
@@ -103,7 +103,8 @@ const ProductAnalysis = () => {
     fetchAnalysis();
   }, [productQuery]);
 
-  const display = analysis ?? mockAnalysis;
+  // Use real API data if available, otherwise show loading or error
+  const display = analysis;
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,89 +133,121 @@ const ProductAnalysis = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Product Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="overflow-hidden shadow-soft">
-              <div className="md:flex">
-                <div className="md:w-1/3">
-                  <img
-                    src={mockAnalysis.product.image}
-                    alt={mockAnalysis.product.name}
-                    className="w-full h-64 md:h-full object-cover"
-                  />
-                </div>
-                <div className="p-6 md:w-2/3">
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-lg">Analyzing product sustainability...</p>
+              <p className="text-sm text-muted-foreground">This may take a few moments</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center justify-center py-20">
+            <Card className="p-8 max-w-md text-center">
+              <h3 className="text-lg font-semibold text-destructive mb-2">Analysis Failed</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => navigate("/")} variant="outline">
+                Try Again
+              </Button>
+            </Card>
+          </div>
+        )}
+
+        {display && !isLoading && !error && (
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Product Info */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="overflow-hidden shadow-soft">
+                <div className="p-6">
                   <Badge variant="outline" className="mb-2">
-                    {mockAnalysis.product.brand}
+                    {productQuery || "Product Analysis"}
                   </Badge>
                   <h2 className="text-2xl font-bold mb-2">
-                    {mockAnalysis.product.name}
+                    {productQuery || "Product Analysis"}
                   </h2>
-                  <p className="text-3xl font-bold text-primary mb-3">
-                    {mockAnalysis.product.price}
-                  </p>
                   <p className="text-muted-foreground">
-                    {mockAnalysis.product.description}
+                    Environmental impact analysis powered by AI
                   </p>
                 </div>
-              </div>
-            </Card>
+              </Card>
 
-            {/* Carbon Footprint */}
-            <Card className="p-6 shadow-soft">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-primary/10 rounded-full">
-                  <TrendingDown className="h-6 w-6 text-primary" />
+              {/* Carbon Footprint */}
+              <Card className="p-6 shadow-soft">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/10 rounded-full">
+                    <TrendingDown className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-2">
+                      Carbon Footprint
+                    </h3>
+                    <p className="text-3xl font-bold text-primary mb-1">
+                      {display.carbonFootprint || "Calculating..."}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {display.carbonComparison || "Analysis in progress"}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Carbon Footprint
+              </Card>
+
+              {/* AI Insight */}
+              <Card className="p-6 shadow-soft gradient-card">
+                <h3 className="text-lg font-semibold mb-3">
+                  🤖 AI Analysis
+                </h3>
+                <p className="text-foreground leading-relaxed">
+                  {display.insight || "Generating environmental insights..."}
+                </p>
+              </Card>
+
+              {/* Alternatives */}
+              {display.alternatives && display.alternatives.length > 0 && (
+                <div>
+                  <h3 className="text-2xl font-bold mb-6">
+                    🌱 Sustainable Alternatives
                   </h3>
-                  <p className="text-3xl font-bold text-primary mb-1">
-                    {mockAnalysis.carbonFootprint}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {mockAnalysis.carbonComparison}
-                  </p>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {display.alternatives.map((alt: any, index: number) => (
+                      <AlternativeCard
+                        key={alt.id || index}
+                        name={alt.name}
+                        price={alt.priceRange}
+                        ecoScore={alt.ecoScore}
+                        savings={alt.carbonSavings}
+                        onClick={() => navigate(`/alternative/${alt.id || index}`)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </Card>
+              )}
+            </div>
 
-            {/* AI Insight */}
-            <Card className="p-6 shadow-soft gradient-card">
-              <h3 className="text-lg font-semibold mb-3">
-                🤖 AI Analysis
-              </h3>
-              <p className="text-foreground leading-relaxed">
-                {mockAnalysis.insight}
-              </p>
-            </Card>
-
-            {/* Alternatives */}
-            <div>
-              <h3 className="text-2xl font-bold mb-6">
-                🌱 Sustainable Alternatives
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                {mockAnalysis.alternatives.map((alt) => (
-                  <AlternativeCard
-                    key={alt.id}
-                    {...alt}
-                    onClick={() => navigate(`/alternative/${alt.id}`)}
-                  />
-                ))}
+            {/* Eco Score */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24">
+                {display.ecoScore ? (
+                  <EcoScoreDisplay {...display.ecoScore} />
+                ) : (
+                  <Card className="p-6 shadow-soft">
+                    <div className="text-center">
+                      <div className="animate-pulse">
+                        <div className="h-8 bg-muted rounded mb-4"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded"></div>
+                          <div className="h-4 bg-muted rounded"></div>
+                          <div className="h-4 bg-muted rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Eco Score */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <EcoScoreDisplay {...mockAnalysis.ecoScore} />
-            </div>
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );
