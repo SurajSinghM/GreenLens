@@ -32,6 +32,92 @@ app.get('/api/test-models', async (req, res) => {
   }
 });
 
+// Chat endpoint
+app.post('/api/chat', async (req, res) => {
+  // Allow basic CORS for browser calls
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { message, conversationHistory } = req.body || {};
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY not configured on the server' });
+    }
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // Build conversation context
+    const systemPrompt = `You are Leaf, an AI-powered sustainability assistant for GreenLens. You help users make eco-friendly choices by:
+
+1. Providing sustainability advice and tips
+2. Explaining environmental concepts in simple terms
+3. Suggesting eco-friendly alternatives to products
+4. Helping users understand carbon footprints and eco-scores
+5. Answering questions about sustainable living
+
+Keep responses helpful, friendly, and focused on environmental topics. If asked about non-environmental topics, politely redirect to sustainability-related advice.`;
+
+    // Convert conversation history to Gemini format
+    const messages = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: 'I understand! I\'m Leaf, your sustainability assistant. I\'m here to help you make eco-friendly choices and understand environmental impact. How can I help you today?' }] }
+    ];
+
+    // Add recent conversation history (last 10 messages to avoid token limits)
+    const recentHistory = conversationHistory.slice(-10);
+    for (const msg of recentHistory) {
+      if (msg.role === 'user') {
+        messages.push({ role: 'user', parts: [{ text: msg.content }] });
+      } else if (msg.role === 'assistant') {
+        messages.push({ role: 'model', parts: [{ text: msg.content }] });
+      }
+    }
+
+    // Add current message
+    messages.push({ role: 'user', parts: [{ text: message }] });
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: messages,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Chat API error', response.status, text);
+      return res.status(502).json({ error: 'AI service error', details: text });
+    }
+
+    const data = await response.json();
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't generate a response. Please try again.";
+
+    return res.status(200).json({ response: aiResponse });
+  } catch (error) {
+    console.error('Error in chat endpoint:', error);
+    return res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
 // API route - direct implementation
 app.post('/api/analyze-product', async (req, res) => {
   // Allow basic CORS for browser calls
@@ -54,24 +140,8 @@ app.post('/api/analyze-product', async (req, res) => {
       return res.status(500).json({ error: 'GEMINI_API_KEY not configured on the server' });
     }
 
-    const systemPrompt = `You are an expert sustainability analyst. Analyze products and provide:
-1. Eco Score (A-F) based on:
-   - Materials & Components (1-100)
-   - Packaging Sustainability (1-100)
-   - Manufacturing & Transport Impact (1-100)
-   - Chemical Safety (1-100)
-   - Corporate Transparency (1-100)
+    const systemPrompt = `Analyze this product for sustainability. Return ONLY valid JSON with this exact structure:
 
-2. Estimated carbon footprint (in kg CO2e)
-3. Comparison (e.g., "equivalent to driving X miles")
-4. A brief insight about environmental concerns
-5. 2-3 sustainable alternatives with:
-   - Product name
-   - Estimated price range
-   - Eco Score
-   - Carbon savings percentage
-
-Return your analysis as JSON with this structure:
 {
   "ecoScore": {
     "overall": "A-F",
@@ -82,11 +152,11 @@ Return your analysis as JSON with this structure:
     "transparency": 1-100
   },
   "carbonFootprint": "X.X kg CO₂e",
-  "carbonComparison": "equivalent to...",
-  "insight": "Brief environmental analysis...",
+  "carbonComparison": "equivalent to driving X miles",
+  "insight": "Brief environmental analysis",
   "alternatives": [
     {
-      "name": "...",
+      "name": "Product name",
       "priceRange": "$X-Y",
       "ecoScore": "A-F",
       "carbonSavings": "X%"
@@ -107,7 +177,7 @@ Return your analysis as JSON with this structure:
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 4096,
         },
       }),
     });
@@ -125,7 +195,23 @@ Return your analysis as JSON with this structure:
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text ?? data;
+    console.log('Raw Gemini response:', JSON.stringify(data, null, 2)); // Debug log
+    
+    // Check if we got a valid response
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('No response from AI model');
+    }
+    
+    const candidate = data.candidates[0];
+    if (candidate.finishReason === 'MAX_TOKENS') {
+      console.warn('Response truncated due to token limit');
+    }
+    
+    const aiResponse = candidate?.content?.parts?.[0]?.text;
+    
+    if (!aiResponse) {
+      throw new Error('No text content in AI response');
+    }
 
     // Try to parse JSON out of the AI text response
     let analysis = null;

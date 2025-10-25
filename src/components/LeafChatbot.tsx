@@ -31,19 +31,35 @@ export const LeafChatbot = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual AI chat endpoint
-      // For now, simulating a response
-      setTimeout(() => {
-        const assistantMessage: Message = {
-          role: "assistant",
-          content:
-            "I'm here to help! While I'm being set up with full AI capabilities, I can already guide you through our product analysis features. Try uploading a product image or pasting a product link on the home page!",
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        setIsLoading(false);
-      }, 1000);
+      const response = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: input,
+          conversationHistory: messages
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+
+      const data = await response.json();
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.response || "I'm sorry, I couldn't process your request. Please try again.",
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
+      const errorMessage: Message = {
+        role: "assistant",
+        content: "I'm sorry, I'm having trouble connecting right now. Please try again later or use the product analysis feature on the main page!",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
     }
   };

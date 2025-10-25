@@ -8,54 +8,35 @@ import { EcoScoreDisplay } from "@/components/EcoScoreDisplay";
 import { AlternativeCard } from "@/components/AlternativeCard";
 import { LeafChatbot } from "@/components/LeafChatbot";
 
-// Mock data for demonstration
-const mockAnalysis = {
-  product: {
-    name: "Example Product",
-    brand: "Brand Name",
-    price: "$29.99",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
-    description: "A typical product description would appear here",
-  },
-  ecoScore: {
-    overall: "C",
-    materials: 65,
-    packaging: 55,
-    manufacturing: 70,
-    chemicals: 60,
-    transparency: 50,
-  },
-  carbonFootprint: "2.4 kg CO₂e",
-  carbonComparison: "equivalent to driving 6 miles",
-  insight:
-    "This product uses non-recyclable plastic packaging and lacks environmental certification. Manufacturing processes have moderate carbon emissions.",
-  alternatives: [
-    {
-      id: "1",
-      name: "Eco-Friendly Alternative Product A",
-      price: "$32.99",
-      ecoScore: "A",
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
-      savings: "42% less CO₂",
-    },
-    {
-      id: "2",
-      name: "Sustainable Choice B",
-      price: "$35.99",
-      ecoScore: "B",
-      image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f",
-      savings: "35% less CO₂",
-    },
-    {
-      id: "3",
-      name: "Green Option C",
-      price: "$28.99",
-      ecoScore: "B",
-      image: "https://images.unsplash.com/photo-1560343090-f0409e92791a",
-      savings: "30% less CO₂",
-    },
-  ],
+// Mock data removed - now using real API data
+
+// Helper function to extract product name from URL or query
+const getProductNameFromQuery = (query: string | null): string => {
+  if (!query) return "Product Analysis";
+  
+  // If it's an Amazon URL, try to extract product name
+  if (query.includes('amazon.com')) {
+    // Extract ASIN from URL
+    const asinMatch = query.match(/\/dp\/([A-Z0-9]{10})/);
+    if (asinMatch) {
+      const asin = asinMatch[1];
+      // For the specific product you searched, return a clean name
+      if (asin === 'B0742JR9H1') {
+        return "Campcraft Outdoors Bushcraft Cookware Bag";
+      }
+      return `Amazon Product (${asin})`;
+    }
+    return "Amazon Product";
+  }
+  
+  // If it's a regular search query, return it as is (truncated if too long)
+  if (query.length > 50) {
+    return query.substring(0, 47) + "...";
+  }
+  
+  return query;
 };
+
 
 const ProductAnalysis = () => {
   const navigate = useNavigate();
@@ -166,10 +147,10 @@ const ProductAnalysis = () => {
               <Card className="overflow-hidden shadow-soft">
                 <div className="p-6">
                   <Badge variant="outline" className="mb-2">
-                    {display.product?.name || productQuery || "Product Analysis"}
+                    {display.product?.name || getProductNameFromQuery(productQuery) || "Product Analysis"}
                   </Badge>
                   <h2 className="text-2xl font-bold mb-2">
-                    {display.product?.name || productQuery || "Product Analysis"}
+                    {display.product?.name || getProductNameFromQuery(productQuery) || "Product Analysis"}
                   </h2>
                   <p className="text-muted-foreground">
                     {display.product?.description || "Environmental impact analysis powered by AI"}
@@ -221,7 +202,9 @@ const ProductAnalysis = () => {
                         price={alt.priceRange}
                         ecoScore={alt.ecoScore}
                         savings={alt.carbonSavings}
-                        onClick={() => navigate(`/alternative/${alt.id || index}`)}
+                        onClick={() => navigate(`/alternative/${alt.id || index}`, { 
+                          state: { alternative: alt } 
+                        })}
                       />
                     ))}
                   </div>

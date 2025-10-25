@@ -7,7 +7,6 @@ interface AlternativeCardProps {
   name: string;
   price: string;
   ecoScore: string;
-  image?: string;
   savings: string;
   onClick: () => void;
 }
@@ -16,7 +15,6 @@ export const AlternativeCard = ({
   name,
   price,
   ecoScore,
-  image,
   savings,
   onClick,
 }: AlternativeCardProps) => {
@@ -33,40 +31,30 @@ export const AlternativeCard = ({
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-elevated transition-smooth cursor-pointer group">
-      <div onClick={onClick} className="p-0">
-        {image && (
-          <div className="relative h-48 bg-muted overflow-hidden">
-            <img
-              src={image}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
-            />
-            <div className="absolute top-3 right-3">
-              <Badge className={`${getGradeBg(ecoScore)} border font-semibold`}>
-                {ecoScore}
-              </Badge>
-            </div>
+    <Card className="hover:shadow-elevated transition-smooth cursor-pointer group">
+      <div onClick={onClick} className="p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg mb-2 line-clamp-2">{name}</h3>
+            <p className="text-2xl font-bold text-primary mb-3">{price}</p>
           </div>
-        )}
-        <div className="p-5 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold line-clamp-2 flex-1">{name}</h3>
-            <Badge variant="outline" className="text-green-600 border-green-300">
-              <Leaf className="h-3 w-3 mr-1" />
-              {savings}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="text-lg font-bold text-primary">{price}</p>
-            <Button
-              size="sm"
-              className="gradient-accent group-hover:scale-105 transition-smooth"
-            >
-              View Details
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+          <Badge className={`${getGradeBg(ecoScore)} border font-semibold text-lg px-3 py-1`}>
+            {ecoScore}
+          </Badge>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
+            <Leaf className="h-3 w-3 mr-1" />
+            {savings}
+          </Badge>
+          <Button
+            size="sm"
+            className="gradient-accent group-hover:scale-105 transition-smooth"
+          >
+            View Details
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
       </div>
     </Card>
