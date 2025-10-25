@@ -84,9 +84,12 @@ const ProductAnalysis = () => {
         }
 
         const json = await res.json();
+        console.log('API Response:', json); // Debug log
         if (json?.success && json.analysis) {
+          console.log('Setting analysis:', json.analysis); // Debug log
           setAnalysis(json.analysis);
         } else if (json?.analysis) {
+          console.log('Setting analysis (fallback):', json.analysis); // Debug log
           setAnalysis(json.analysis);
         } else {
           throw new Error(json?.error || 'No analysis returned');
@@ -105,6 +108,7 @@ const ProductAnalysis = () => {
 
   // Use real API data if available, otherwise show loading or error
   const display = analysis;
+  console.log('Display data:', display); // Debug log
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,13 +166,13 @@ const ProductAnalysis = () => {
               <Card className="overflow-hidden shadow-soft">
                 <div className="p-6">
                   <Badge variant="outline" className="mb-2">
-                    {productQuery || "Product Analysis"}
+                    {display.product?.name || productQuery || "Product Analysis"}
                   </Badge>
                   <h2 className="text-2xl font-bold mb-2">
-                    {productQuery || "Product Analysis"}
+                    {display.product?.name || productQuery || "Product Analysis"}
                   </h2>
                   <p className="text-muted-foreground">
-                    Environmental impact analysis powered by AI
+                    {display.product?.description || "Environmental impact analysis powered by AI"}
                   </p>
                 </div>
               </Card>
