@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,49 @@ const ProductAnalysis = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productQuery = searchParams.get("q");
+  const [analysis, setAnalysis] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // If there's a query param, call the serverless API to analyze
+    const fetchAnalysis = async () => {
+      if (!productQuery) return;
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/analyze-product`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productData: { query: productQuery } }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || `Request failed: ${res.status}`);
+        }
+
+        const json = await res.json();
+        if (json?.success && json.analysis) {
+          setAnalysis(json.analysis);
+        } else if (json?.analysis) {
+          setAnalysis(json.analysis);
+        } else {
+          throw new Error(json?.error || 'No analysis returned');
+        }
+      } catch (err: any) {
+        console.error('Analysis fetch error:', err);
+        setError(err.message || String(err));
+        setAnalysis(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalysis();
+  }, [productQuery]);
+
+  const display = analysis ?? mockAnalysis;
 
   return (
     <div className="min-h-screen bg-background">
