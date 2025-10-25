@@ -1,4 +1,6 @@
 project_id = "cipejpopcftljgpsllcn"
 
 [functions.analyze-product]
+# Supabase functions are no longer used in this project. The functionality was
+# migrated to a Vercel serverless function at `api/analyze-product.ts`.
 verify_jwt = false
