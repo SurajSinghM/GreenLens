@@ -109,7 +109,7 @@ const Index = () => {
               </div>
               <h2 className="text-5xl md:text-6xl font-bold leading-tight">
                 Discover the{" "}
-                <span className="gradient-hero bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                   Environmental Impact
                 </span>{" "}
                 of Your Purchases

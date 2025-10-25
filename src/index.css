@@ -9,7 +9,8 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Eco-friendly color palette */
-    --background: 142 40% 96%;
+  /* Set the default page background to white to remove the green-tinted space on the front page */
+  --background: 0 0% 100%;
     --foreground: 142 60% 15%;
 
     --card: 0 0% 100%;
